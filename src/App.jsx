@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, Clock, Sparkles, PhoneCall, Calendar, Shield, Zap, Brain, Waves, ArrowRight, X } from 'lucide-react'
+import { ArrowRight, X } from 'lucide-react'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -14,6 +14,7 @@ export default function App() {
   const [modalType, setModalType] = useState('demo') // 'demo' | 'email'
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState(null)
+  const [cardIndex, setCardIndex] = useState(0)
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
 
@@ -21,6 +22,41 @@ export default function App() {
     setModalType(type)
     setModalOpen(true)
   }
+
+  // Cycle the feature card every ~8s
+  const cards = useMemo(
+    () => [
+      {
+        title: 'Live Call',
+        lines: [
+          { who: 'Blovi', msg: 'Hi—how can I help you today?' },
+          { who: 'Caller', msg: 'I need to book an appointment next Tuesday around noon.' },
+          { who: 'Blovi', msg: 'Absolutely. May I have your name and phone number to confirm?' },
+        ],
+      },
+      {
+        title: 'Smart Intake',
+        lines: [
+          { who: 'Caller', msg: 'My name is Sam, I prefer mornings.' },
+          { who: 'Blovi', msg: 'Thanks Sam. Morning slots are open—shall I book 9:30am?' },
+          { who: 'Caller', msg: 'Perfect.' },
+        ],
+      },
+      {
+        title: 'Instant Scheduling',
+        lines: [
+          { who: 'Blovi', msg: 'I’ve reserved Tuesday 9:30am. You’ll receive a confirmation by text.' },
+          { who: 'Caller', msg: 'Got it, thanks!' },
+        ],
+      },
+    ],
+    []
+  )
+
+  useEffect(() => {
+    const t = setInterval(() => setCardIndex((i) => (i + 1) % cards.length), 8000)
+    return () => clearInterval(t)
+  }, [cards.length])
 
   async function submitForm(e) {
     e.preventDefault()
@@ -31,22 +67,53 @@ export default function App() {
       email: form.get('email') || undefined,
       phone: form.get('phone') || undefined,
       message: form.get('message') || undefined,
-      source: modalType === 'demo' ? 'request-demo' : 'send-email'
+      source: modalType === 'demo' ? 'request-demo' : 'send-email',
     }
     try {
       setSubmitting(true)
       const res = await fetch(`${API_BASE}/contact/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.detail || 'Failed to submit')
-      setModalOpen(false)
-      setToast({ type: 'success', message: modalType === 'demo' ? 'Thanks! We received your demo request.' : 'Thanks! Your message has been sent.' })
-      e.currentTarget.reset()
+      // Treat any 2xx response as success without relying on body parsing
+      if (res.ok) {
+        setModalOpen(false)
+        setToast({
+          type: 'success',
+          message: modalType === 'demo' ? 'Thanks! We received your demo request.' : 'Thanks! Your message has been sent.'
+        })
+        e.currentTarget.reset()
+      } else {
+        let msg = 'Submission failed. Please try again.'
+        try { const data = await res.json(); if (data?.detail) msg = data.detail } catch {}
+        setToast({ type: 'error', message: msg })
+      }
     } catch (err) {
-      setToast({ type: 'error', message: 'Submission failed. Please try again.' })
+      // Network-level error
+      setToast({ type: 'error', message: 'Network issue—please try again.' })
+    } finally {
+      setSubmitting(false)
+      setTimeout(() => setToast(null), 3500)
+    }
+  }
+
+  // Background quick email (no modal)
+  async function sendQuickEmail() {
+    try {
+      setSubmitting(true)
+      const res = await fetch(`${API_BASE}/contact/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'quick-email' }),
+      })
+      if (res.ok) {
+        setToast({ type: 'success', message: 'Thanks! Your email has been sent.' })
+      } else {
+        setToast({ type: 'error', message: 'Could not send email. Please try again.' })
+      }
+    } catch (e) {
+      setToast({ type: 'error', message: 'Network issue—please try again.' })
     } finally {
       setSubmitting(false)
       setTimeout(() => setToast(null), 3500)
@@ -54,216 +121,119 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased selection:bg-violet-500/20 selection:text-slate-900">
-      {/* Premium light ambient background */}
+    <div className="min-h-screen bg-[#f7f7fb] text-slate-900 antialiased selection:bg-violet-500/20 selection:text-slate-900">
+      {/* Ambient background with lilac gradient + subtle glass depth */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        {/* white base */}
-        <div className="absolute inset-0 bg-white" />
-        {/* subtle soft gradient washes */}
-        <div className="absolute inset-0 opacity-70 [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)] bg-[radial-gradient(80%_60%_at_30%_0%,rgba(139,92,246,0.18)_0%,rgba(139,92,246,0)_60%)]" />
-        <div className="absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_bottom_right,black,transparent_70%)] bg-[radial-gradient(60%_50%_at_85%_90%,rgba(168,85,247,0.15)_0%,rgba(168,85,247,0)_60%)]" />
-        {/* soft vignette for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f7f7fb] via-[#f3f0ff] to-[#eef0ff]" />
+        <div className="absolute inset-0 opacity-80 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)] bg-[radial-gradient(80%_60%_at_30%_0%,rgba(139,92,246,0.18)_0%,rgba(139,92,246,0)_60%)]" />
+        <div className="absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_bottom_right,black,transparent_70%)] bg-[radial-gradient(60%_50%_at_85%_90%,rgba(168,85,247,0.14)_0%,rgba(168,85,247,0)_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_120%,rgba(2,6,23,0.08)_0%,rgba(2,6,23,0)_60%)]" />
-        {/* subtle grid texture */}
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.06] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, rgba(2,6,23,.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(2,6,23,.08) 1px, transparent 1px)',
-            backgroundSize: '36px 36px',
-          }}
-        />
-        {/* animated light sweep */}
         <motion.div
           initial={{ x: '-20%' }}
           animate={{ x: '120%' }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/4 left-0 h-24 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent blur-2xl"
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-1/3 left-0 h-20 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent blur-2xl"
         />
-        {/* faint color orb */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 0.5, scale: 1 }}
-          transition={{ duration: 1.2 }}
-          className="absolute -top-24 -right-24 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-violet-300/30 via-fuchsia-300/20 to-indigo-300/20 blur-3xl"
-        />
-        {/* noise for material feel */}
         <div
-          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+          className="absolute inset-0 opacity-[0.04] mix-blend-overlay"
           style={{
             backgroundImage:
-              'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' preserveAspectRatio=\'none\' viewBox=\'0 0 800 600\'><filter id=\'n\'><feTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/></filter><rect width=\'100%\' height=\'100%\' filter=\'url(%23n)\' opacity=\'0.35\'/></svg>")',
-            backgroundSize: 'cover',
+              "linear-gradient(to right, rgba(2,6,23,.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(2,6,23,.08) 1px, transparent 1px)",
+            backgroundSize: '36px 36px',
           }}
         />
       </div>
 
-      {/* Brand mark: redesigned single B */}
-      <div className="fixed left-5 top-5 z-20 select-none">
-        <div className="flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-400 shadow-xl ring-1 ring-black/5">
-            <span className="font-semibold text-white tracking-tight">B</span>
-          </div>
+      {/* Logo only at top-left */}
+      <div className="fixed left-6 top-6 z-20 select-none">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-indigo-500 shadow-xl ring-1 ring-black/5">
+          <svg viewBox="0 0 32 32" className="h-6 w-6 text-white" fill="currentColor" aria-hidden>
+            <path d="M10 6h8a6 6 0 1 1 0 12h-8V6zm0 12h9a5 5 0 1 1 0 10h-9V18z" />
+          </svg>
         </div>
       </div>
 
-      {/* Page container with generous spacing */}
-      <main className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 pt-32 pb-40">
+      {/* Wide layout with generous spacing */}
+      <main className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 pt-40 pb-44">
         {/* Hero */}
-        <motion.section variants={stagger} initial="hidden" animate="show" className="relative">
-          <div className="grid items-center gap-14 lg:grid-cols-12">
-            {/* Headline */}
-            <div className="lg:col-span-7">
-              <motion.h1 variants={fadeUp} className="text-4xl sm:text-6xl font-semibold tracking-tight text-slate-900">
+        <motion.section variants={stagger} initial="hidden" animate="show" className="relative text-center">
+          {/* Glass/gradient heading */}
+          <motion.h1
+            variants={fadeUp}
+            className="mx-auto max-w-5xl text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight"
+          >
+            <span className="relative inline-block">
+              <span className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
                 The AI voice agent that answers every call
-              </motion.h1>
-              <motion.p variants={fadeUp} className="mt-6 max-w-xl text-lg text-slate-600">
-                Blovi handles your phone line with human-quality conversations, captures details, and books appointments—instantly and reliably, 24/7.
-              </motion.p>
-              <motion.div variants={fadeUp} className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <button onClick={() => openModal('demo')} className="group inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20">
-                  Request demo
-                  <ArrowRight className="ml-2 h-4 w-4 transition -translate-x-0.5 group-hover:translate-x-0" />
-                </button>
-                <a href="#about" className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-sm text-slate-700 backdrop-blur transition hover:bg-white">
-                  Learn more
-                </a>
-              </motion.div>
-              {/* quick highlights */}
-              <motion.ul variants={fadeUp} className="mt-10 grid max-w-xl grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-3">
-                {[
-                  { icon: Clock, label: 'Fast and reliable call pick-ups, every time.' },
-                  { icon: Brain, label: 'Understands intent' },
-                  { icon: Calendar, label: 'Books for you' },
-                ].map(({ icon: Icon, label }) => (
-                  <li key={label} className="flex items-center gap-2 rounded-xl bg-white/70 px-3 py-2 ring-1 ring-slate-200">
-                    <Icon className="h-4 w-4 text-violet-500" /> {label}
-                  </li>
-                ))}
-              </motion.ul>
-            </div>
-
-            {/* Visual */}
-            <div className="lg:col-span-5">
-              <motion.div
-                variants={fadeUp}
-                className="relative overflow-hidden rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm"
-              >
-                {/* faux interface */}
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500/90" />
-                    Live call
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5">00:23</span>
-                    <Shield className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
-                </div>
-                <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <div className="text-sm text-slate-800">Blovi</div>
-                  <p className="mt-1 text-sm text-slate-600">Hi—how can I help you today?</p>
-                </div>
-                <div className="mt-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                  <div className="text-sm text-slate-800">Caller</div>
-                  <p className="mt-1 text-sm text-slate-700">I’d like to book an appointment next Tuesday around noon.</p>
-                </div>
-                <div className="mt-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <div className="text-sm text-slate-800">Blovi</div>
-                  <p className="mt-1 text-sm text-slate-600">Great—can I have your name and phone number to confirm?</p>
-                </div>
-
-                {/* reflective sheen */}
-                <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-1/2 -rotate-6 bg-gradient-to-r from-white/70 to-transparent blur-2xl" />
-              </motion.div>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Divider */}
-        <div className="my-20 h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-        {/* About / What Blovi Is */}
-        <motion.section id="about" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
-          <motion.h2 variants={fadeUp} className="text-2xl font-semibold text-slate-900">What is Blovi?</motion.h2>
-          <motion.p variants={fadeUp} className="mt-4 max-w-3xl text-slate-600">
-            Blovi is an AI voice receptionist for modern businesses. It answers every call instantly, speaks naturally, understands what people need, collects the right details, and schedules appointments—all without putting anyone on hold.
+              </span>
+              <span className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-white/30 blur-xl" />
+            </span>
+          </motion.h1>
+          <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-3xl text-lg text-slate-700">
+            Human-quality conversations, instant pickup, and seamless scheduling—24/7.
           </motion.p>
-        </motion.section>
-
-        {/* Core Capabilities */}
-        <motion.section id="capabilities" className="mt-20" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
-          <motion.h2 variants={fadeUp} className="text-2xl font-semibold text-slate-900">Core capabilities</motion.h2>
-          <motion.ul variants={stagger} className="mt-8 grid gap-6 sm:grid-cols=2 lg:grid-cols-3 sm:grid-cols-2">
-            {[
-              { icon: PhoneCall, title: 'Instant pickup', desc: 'No voicemails. No missed calls.' },
-              { icon: Brain, title: 'Natural conversations', desc: 'Understands context and intent.' },
-              { icon: Calendar, title: 'Scheduling', desc: 'Books and confirms in your calendar.' },
-              { icon: Shield, title: 'Reliable', desc: 'Consistent quality, 24/7 availability.' },
-              { icon: Zap, title: 'Fast + accurate', desc: 'Optimized for speed and clarity.' },
-              { icon: Waves, title: 'Human-like voice', desc: 'Polished, friendly and on-brand.' },
-            ].map(({ icon: Icon, title, desc }) => (
-              <motion.li variants={fadeUp} key={title} className="group rounded-2xl bg-white p-6 ring-1 ring-slate-200 transition hover:shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-lg bg-violet-50 p-2 text-violet-600 ring-1 ring-violet-100">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900">{title}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{desc}</p>
-                  </div>
-                </div>
-              </motion.li>
-            ))}
-          </motion.ul>
-        </motion.section>
-
-        {/* Why teams choose Blovi */}
-        <motion.section id="different" className="mt-20" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
-          <motion.h2 variants={fadeUp} className="text-2xl font-semibold text-slate-900">Why teams choose Blovi</motion.h2>
-          <motion.div variants={stagger} className="mt-8 grid gap-6 sm:grid-cols-2">
-            {[
-              { title: 'Lightning fast', desc: 'Immediate response creates a premium experience.' },
-              { title: 'Feels human', desc: 'Warm tone with smart timing, clarifications and empathy.' },
-              { title: 'High accuracy', desc: 'Understands messy inputs and confirms key details.' },
-              { title: 'Works across industries', desc: 'Clinics, restaurants, salons, services and more.' },
-            ].map(({ title, desc }) => (
-              <motion.div variants={fadeUp} key={title} className="rounded-2xl bg-gradient-to-br from-white to-white p-6 ring-1 ring-slate-200">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-violet-600" />
-                  <div>
-                    <h3 className="font-medium text-slate-900">{title}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{desc}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+          <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <button
+              onClick={() => openModal('demo')}
+              className="group inline-flex items-center rounded-full bg-slate-900 text-white px-7 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20"
+            >
+              Request demo
+              <ArrowRight className="ml-2 h-4 w-4 transition -translate-x-0.5 group-hover:translate-x-0" />
+            </button>
+            <button
+              onClick={sendQuickEmail}
+              disabled={submitting}
+              className="inline-flex items-center rounded-full border border-slate-300/80 bg-white/80 px-7 py-3 text-sm text-slate-800 backdrop-blur transition hover:bg-white disabled:opacity-60"
+            >
+              Send us an email
+            </button>
           </motion.div>
         </motion.section>
 
-        {/* Contact / CTA */}
-        <motion.section id="contact" className="mt-24" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
-          <motion.div variants={fadeUp} className="relative overflow-hidden rounded-3xl bg-white p-10 text-center ring-1 ring-slate-200 shadow-sm">
-            <h3 className="text-xl font-semibold text-slate-900">Let’s talk</h3>
-            <p className="mx-auto mt-3 max-w-2xl text-slate-600">Ready to automate your phone line with a human-quality agent?</p>
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button onClick={() => openModal('email')} disabled={submitting} className="inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20 disabled:opacity-60">
-                Send us an email
-              </button>
-              <button onClick={() => openModal('demo')} className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-sm text-slate-700 backdrop-blur transition hover:bg-white">
-                Request a demo
-              </button>
+        {/* Feature Box beneath heading */}
+        <section className="relative mx-auto mt-16 max-w-5xl">
+          <div className="relative overflow-hidden rounded-3xl bg-white/70 p-6 ring-1 ring-slate-200/80 shadow-sm backdrop-blur">
+            <div className="flex items-center justify-between text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500/90" />
+                {cards[cardIndex].title}
+              </div>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">Live</span>
             </div>
-            {/* sheen */}
-            <div className="pointer-events-none absolute -left-16 -top-8 h-48 w-2/3 -rotate-6 bg-gradient-to-r from-white to-transparent blur-2xl" />
-          </motion.div>
-        </motion.section>
+            <div className="relative mt-4 min-h-[160px]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={cardIndex}
+                  initial={{ opacity: 0, y: 12, rotateX: -8 }}
+                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                  exit={{ opacity: 0, y: -12, rotateX: 8 }}
+                  transition={{ duration: 0.5, ease: [0.22, 0.72, 0, 1] }}
+                  className="space-y-3"
+                >
+                  {cards[cardIndex].lines.map((l, i) => (
+                    <div key={i} className={
+                      (l.who === 'Blovi'
+                        ? 'rounded-2xl bg-slate-50 ring-slate-200'
+                        : 'rounded-2xl bg-white ring-slate-200') +
+                      ' p-4 ring-1'
+                    }>
+                      <div className="text-sm font-medium text-slate-800">{l.who}</div>
+                      <p className="mt-1 text-sm text-slate-700">{l.msg}</p>
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            <div className="pointer-events-none absolute -left-16 -top-10 h-48 w-2/3 -rotate-6 bg-gradient-to-r from-white/80 to-transparent blur-2xl" />
+          </div>
+        </section>
+
+        {/* Removed generic sections for a cleaner, premium feel */}
       </main>
 
       {/* Footer */}
-      <footer className="pb-14">
-        <div className="mx-auto max-w-6xl px-5 text-center text-sm text-slate-500">
+      <footer className="pb-16">
+        <div className="mx-auto max-w-7xl px-6 text-center text-sm text-slate-500">
           Blovi © 2025. All rights reserved.
         </div>
       </footer>
