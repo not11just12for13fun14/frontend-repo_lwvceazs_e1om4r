@@ -10,32 +10,19 @@ const fadeUp = {
 const stagger = { show: { transition: { staggerChildren: 0.08 } } }
 
 export default function App() {
-  const [demoOpen, setDemoOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalType, setModalType] = useState('demo') // 'demo' | 'email'
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState(null)
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
 
-  async function sendQuickEmail() {
-    try {
-      setSubmitting(true)
-      const res = await fetch(`${API_BASE}/contact/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'quick-email' })
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.detail || 'Failed to send')
-      setToast({ type: 'success', message: 'Thanks! Your email has been sent. We will get back to you shortly.' })
-    } catch (e) {
-      setToast({ type: 'error', message: 'Could not send right now. Please try again in a moment.' })
-    } finally {
-      setSubmitting(false)
-      setTimeout(() => setToast(null), 3500)
-    }
+  function openModal(type = 'demo') {
+    setModalType(type)
+    setModalOpen(true)
   }
 
-  async function submitDemoForm(e) {
+  async function submitForm(e) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
     const payload = {
@@ -44,7 +31,7 @@ export default function App() {
       email: form.get('email') || undefined,
       phone: form.get('phone') || undefined,
       message: form.get('message') || undefined,
-      source: 'request-demo'
+      source: modalType === 'demo' ? 'request-demo' : 'send-email'
     }
     try {
       setSubmitting(true)
@@ -55,8 +42,8 @@ export default function App() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.detail || 'Failed to submit')
-      setDemoOpen(false)
-      setToast({ type: 'success', message: 'Thanks! We received your request and will reach out soon.' })
+      setModalOpen(false)
+      setToast({ type: 'success', message: modalType === 'demo' ? 'Thanks! We received your demo request.' : 'Thanks! Your message has been sent.' })
       e.currentTarget.reset()
     } catch (err) {
       setToast({ type: 'error', message: 'Submission failed. Please try again.' })
@@ -135,7 +122,7 @@ export default function App() {
                 Blovi handles your phone line with human-quality conversations, captures details, and books appointments—instantly and reliably, 24/7.
               </motion.p>
               <motion.div variants={fadeUp} className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <button onClick={() => setDemoOpen(true)} className="group inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20">
+                <button onClick={() => openModal('demo')} className="group inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20">
                   Request demo
                   <ArrowRight className="ml-2 h-4 w-4 transition -translate-x-0.5 group-hover:translate-x-0" />
                 </button>
@@ -261,10 +248,10 @@ export default function App() {
             <h3 className="text-xl font-semibold text-slate-900">Let’s talk</h3>
             <p className="mx-auto mt-3 max-w-2xl text-slate-600">Ready to automate your phone line with a human-quality agent?</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button onClick={sendQuickEmail} disabled={submitting} className="inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20 disabled:opacity-60">
-                {submitting ? 'Sending…' : 'Send us an email'}
+              <button onClick={() => openModal('email')} disabled={submitting} className="inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20 disabled:opacity-60">
+                Send us an email
               </button>
-              <button onClick={() => setDemoOpen(true)} className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-sm text-slate-700 backdrop-blur transition hover:bg-white">
+              <button onClick={() => openModal('demo')} className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-sm text-slate-700 backdrop-blur transition hover:bg-white">
                 Request a demo
               </button>
             </div>
@@ -281,17 +268,17 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Demo Modal */}
+      {/* Unified Modal for Demo + Email */}
       <AnimatePresence>
-        {demoOpen && (
+        {modalOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 grid place-items-center p-4">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setDemoOpen(false)} />
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
             <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                <h4 className="font-semibold text-slate-900">Request a demo</h4>
-                <button onClick={() => setDemoOpen(false)} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+                <h4 className="font-semibold text-slate-900">{modalType === 'demo' ? 'Request a demo' : 'Send us an email'}</h4>
+                <button onClick={() => setModalOpen(false)} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
               </div>
-              <form onSubmit={submitDemoForm} className="px-5 py-5">
+              <form onSubmit={submitForm} className="px-5 py-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-1">
                     <label className="text-xs font-medium text-slate-700">Name</label>
@@ -311,12 +298,12 @@ export default function App() {
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-xs font-medium text-slate-700">Short message</label>
-                    <textarea name="message" rows={4} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30" placeholder="What would you like to achieve with Blovi?" />
+                    <textarea name="message" rows={4} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30" placeholder={modalType === 'demo' ? 'What would you like to see in the demo?' : 'How can we help?'} />
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-                  <button type="button" onClick={() => setDemoOpen(false)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Cancel</button>
-                  <button type="submit" disabled={submitting} className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">{submitting ? 'Sending…' : 'Send request'}</button>
+                  <button type="button" onClick={() => setModalOpen(false)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Cancel</button>
+                  <button type="submit" disabled={submitting} className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">{submitting ? 'Sending…' : modalType === 'demo' ? 'Send request' : 'Send message'}</button>
                 </div>
               </form>
             </motion.div>
