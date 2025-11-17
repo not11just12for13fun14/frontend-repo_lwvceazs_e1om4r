@@ -16,7 +16,20 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [cardIndex, setCardIndex] = useState(0)
 
-  const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
+  // Build robust backend candidates to avoid "Network issue" when env isn't set
+  const API_CANDIDATES = useMemo(() => {
+    const list = []
+    const env = import.meta.env.VITE_BACKEND_URL
+    if (env) list.push(String(env).replace(/\/$/, ''))
+    try {
+      const u = new URL(window.location.href)
+      // Dev: swap 3000 -> 8000
+      if (u.port === '3000') list.push(`${u.protocol}//${u.hostname}:8000`)
+      // Fallback same origin (if a reverse proxy is configured in prod)
+      list.push(`${u.protocol}//${u.host}`)
+    } catch {}
+    return Array.from(new Set(list))
+  }, [])
 
   function openModal(type = 'demo') {
     setModalType(type)
@@ -58,6 +71,25 @@ export default function App() {
     return () => clearInterval(t)
   }, [cards.length])
 
+  async function postEmail(payload) {
+    let lastError
+    for (const base of API_CANDIDATES) {
+      try {
+        const res = await fetch(`${base}/contact/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (res.ok) return { ok: true }
+        lastError = new Error(`HTTP ${res.status}`)
+      } catch (e) {
+        lastError = e
+        continue
+      }
+    }
+    throw lastError || new Error('Network')
+  }
+
   async function submitForm(e) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
@@ -71,26 +103,14 @@ export default function App() {
     }
     try {
       setSubmitting(true)
-      const res = await fetch(`${API_BASE}/contact/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      await postEmail(payload)
+      setModalOpen(false)
+      setToast({
+        type: 'success',
+        message: modalType === 'demo' ? 'Thanks! We received your demo request.' : 'Thanks! Your message has been sent.'
       })
-      // Treat any 2xx response as success without relying on body parsing
-      if (res.ok) {
-        setModalOpen(false)
-        setToast({
-          type: 'success',
-          message: modalType === 'demo' ? 'Thanks! We received your demo request.' : 'Thanks! Your message has been sent.'
-        })
-        e.currentTarget.reset()
-      } else {
-        let msg = 'Submission failed. Please try again.'
-        try { const data = await res.json(); if (data?.detail) msg = data.detail } catch {}
-        setToast({ type: 'error', message: msg })
-      }
+      e.currentTarget.reset()
     } catch (err) {
-      // Network-level error
       setToast({ type: 'error', message: 'Network issue—please try again.' })
     } finally {
       setSubmitting(false)
@@ -98,20 +118,12 @@ export default function App() {
     }
   }
 
-  // Background quick email (kept but no longer used by buttons)
+  // Optional quick email helper (unused by buttons but kept available)
   async function sendQuickEmail() {
     try {
       setSubmitting(true)
-      const res = await fetch(`${API_BASE}/contact/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'quick-email' }),
-      })
-      if (res.ok) {
-        setToast({ type: 'success', message: 'Thanks! Your email has been sent.' })
-      } else {
-        setToast({ type: 'error', message: 'Could not send email. Please try again.' })
-      }
+      await postEmail({ source: 'quick-email' })
+      setToast({ type: 'success', message: 'Thanks! Your email has been sent.' })
     } catch (e) {
       setToast({ type: 'error', message: 'Network issue—please try again.' })
     } finally {
@@ -157,16 +169,18 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 pt-40 pb-44">
         {/* Hero */}
         <motion.section variants={stagger} initial="hidden" animate="show" className="relative text-center">
-          {/* Glass/gradient heading */}
+          {/* Glass/gradient heading (purple SaaS) */}
           <motion.h1
             variants={fadeUp}
             className="mx-auto max-w-5xl text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight"
           >
             <span className="relative inline-block">
-              <span className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-br from-violet-700 via-fuchsia-600 to-indigo-700 bg-clip-text text-transparent">
                 The AI voice agent that answers every call
               </span>
+              {/* Glassy glow behind text */}
               <span className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-white/30 blur-xl" />
+              <span className="pointer-events-none absolute inset-x-10 -top-2 -z-10 h-10 rounded-full bg-gradient-to-r from-fuchsia-400/30 via-white/30 to-violet-400/30 blur-2xl" />
             </span>
           </motion.h1>
           <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-3xl text-lg text-slate-700">
