@@ -15,6 +15,7 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState(null)
   const [cardIndex, setCardIndex] = useState(0)
+  const [apiBase, setApiBase] = useState(null)
 
   // Build robust backend candidates to avoid "Network issue" when env isn't set
   const API_CANDIDATES = useMemo(() => {
@@ -30,6 +31,31 @@ export default function App() {
     } catch {}
     return Array.from(new Set(list))
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function detect() {
+      // Ping each candidate /test and cache the first that responds
+      for (const base of API_CANDIDATES) {
+        try {
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 3500)
+          const r = await fetch(`${base}/test`, { signal: controller.signal })
+          clearTimeout(timeout)
+          if (r.ok) {
+            if (!cancelled) setApiBase(base)
+            console.info('[API] Using backend at', base)
+            return
+          }
+        } catch (_) {
+          // try next
+        }
+      }
+      console.warn('[API] No backend detected from candidates:', API_CANDIDATES)
+    }
+    detect()
+    return () => { cancelled = true }
+  }, [API_CANDIDATES])
 
   function openModal(type = 'demo') {
     setModalType(type)
@@ -73,7 +99,8 @@ export default function App() {
 
   async function postEmail(payload) {
     let lastError
-    for (const base of API_CANDIDATES) {
+    const bases = apiBase ? [apiBase, ...API_CANDIDATES.filter((b) => b !== apiBase)] : API_CANDIDATES
+    for (const base of bases) {
       try {
         const res = await fetch(`${base}/contact/email`, {
           method: 'POST',
@@ -169,7 +196,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 pt-40 pb-44">
         {/* Hero */}
         <motion.section variants={stagger} initial="hidden" animate="show" className="relative text-center">
-          {/* Professional, single-tone deep purple heading with subtle glass backdrop */}
+          {/* Professional, deep purple heading with more pronounced glass effect */}
           <motion.h1
             variants={fadeUp}
             className="mx-auto max-w-5xl text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight"
@@ -178,9 +205,9 @@ export default function App() {
               <span className="text-violet-900">
                 The AI voice agent that answers every call
               </span>
-              {/* Subtle glass backdrop behind the text */}
-              <span className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-white/25 blur-xl" />
-              <span className="pointer-events-none absolute inset-x-10 -top-2 -z-10 h-10 rounded-full bg-violet-500/10 blur-2xl" />
+              {/* Glass layers: soft blur + subtle ring + highlight streak */}
+              <span className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-white/15 backdrop-blur-md ring-1 ring-white/40" />
+              <span className="pointer-events-none absolute inset-x-8 -top-3 -z-10 h-10 rounded-full bg-white/40 blur-2xl opacity-50" />
             </span>
           </motion.h1>
           <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-3xl text-lg text-slate-700">
