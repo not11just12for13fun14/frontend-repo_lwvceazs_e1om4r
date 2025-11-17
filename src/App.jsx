@@ -98,7 +98,7 @@ export default function App() {
     }
   }
 
-  // Background quick email (no modal)
+  // Background quick email (kept but no longer used by buttons)
   async function sendQuickEmail() {
     try {
       setSubmitting(true)
@@ -181,7 +181,7 @@ export default function App() {
               <ArrowRight className="ml-2 h-4 w-4 transition -translate-x-0.5 group-hover:translate-x-0" />
             </button>
             <button
-              onClick={sendQuickEmail}
+              onClick={() => openModal('email')}
               disabled={submitting}
               className="inline-flex items-center rounded-full border border-slate-300/80 bg-white/80 px-7 py-3 text-sm text-slate-800 backdrop-blur transition hover:bg-white disabled:opacity-60"
             >
@@ -298,7 +298,7 @@ export default function App() {
             <h3 className="text-2xl font-semibold bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">Let’s talk</h3>
             <p className="mx-auto mt-3 max-w-2xl text-slate-700">Ready to automate your phone line with a human-quality agent?</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button onClick={sendQuickEmail} disabled={submitting} className="inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20 disabled:opacity-60">
+              <button onClick={() => openModal('email')} disabled={submitting} className="inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20 disabled:opacity-60">
                 Send us an email
               </button>
               <button onClick={() => openModal('demo')} className="inline-flex items-center rounded-full border border-slate-300/80 bg-white/80 px-6 py-3 text-sm text-slate-800 backdrop-blur transition hover:bg-white">
