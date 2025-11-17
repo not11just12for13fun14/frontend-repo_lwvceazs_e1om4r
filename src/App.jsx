@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, X } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Clock, Brain, Calendar, Shield, Zap, Waves, X } from 'lucide-react'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -228,7 +228,86 @@ export default function App() {
           </div>
         </section>
 
-        {/* Removed generic sections for a cleaner, premium feel */}
+        {/* Restored: What is Blovi? */}
+        <motion.section id="about" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} className="mt-28">
+          <motion.h2 variants={fadeUp} className="text-center text-3xl font-semibold">
+            <span className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">What is Blovi?</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-4xl text-center text-slate-700 text-lg">
+            An AI voice receptionist for modern businesses. It answers instantly, speaks naturally, understands intent, collects the right details, and schedules—without putting anyone on hold.
+          </motion.p>
+        </motion.section>
+
+        {/* Restored: Core capabilities */}
+        <motion.section id="capabilities" className="mt-24" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
+          <motion.h2 variants={fadeUp} className="text-center text-3xl font-semibold">
+            <span className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">Core capabilities</span>
+          </motion.h2>
+          <motion.ul variants={stagger} className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: Clock, title: 'Instant pickup', desc: 'No voicemails. No missed calls.' },
+              { icon: Brain, title: 'Understands intent', desc: 'Natural, context-aware conversation.' },
+              { icon: Calendar, title: 'Scheduling', desc: 'Books and confirms in your calendar.' },
+              { icon: Shield, title: 'Reliable', desc: 'Consistent quality, 24/7 availability.' },
+              { icon: Zap, title: 'Fast + accurate', desc: 'Optimized for speed and clarity.' },
+              { icon: Waves, title: 'On-brand voice', desc: 'Friendly, polished and consistent.' },
+            ].map(({ icon: Icon, title, desc }) => (
+              <motion.li variants={fadeUp} key={title} className="group rounded-2xl bg-white/80 p-6 ring-1 ring-slate-200 backdrop-blur transition hover:shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-lg bg-violet-50 p-2 text-violet-600 ring-1 ring-violet-100">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-slate-900">{title}</h3>
+                    <p className="mt-1 text-sm text-slate-700">{desc}</p>
+                  </div>
+                </div>
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.section>
+
+        {/* Restored: Why teams choose Blovi */}
+        <motion.section id="different" className="mt-24" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
+          <motion.h2 variants={fadeUp} className="text-center text-3xl font-semibold">
+            <span className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">Why teams choose Blovi</span>
+          </motion.h2>
+          <motion.div variants={stagger} className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2">
+            {[
+              { title: 'Lightning fast', desc: 'Immediate response creates a premium experience.' },
+              { title: 'Feels human', desc: 'Warm tone with smart timing and clarifications.' },
+              { title: 'High accuracy', desc: 'Understands messy inputs and confirms key details.' },
+              { title: 'Works across industries', desc: 'Clinics, restaurants, salons, services and more.' },
+            ].map(({ title, desc }) => (
+              <motion.div variants={fadeUp} key={title} className="rounded-2xl bg-white/80 p-6 ring-1 ring-slate-200 backdrop-blur">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-violet-600" />
+                  <div>
+                    <h3 className="font-medium text-slate-900">{title}</h3>
+                    <p className="mt-1 text-sm text-slate-700">{desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.section>
+
+        {/* Restored: Contact / CTA */}
+        <motion.section id="contact" className="mt-28" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
+          <motion.div variants={fadeUp} className="relative overflow-hidden rounded-3xl bg-white/80 p-12 text-center ring-1 ring-slate-200 shadow-sm backdrop-blur">
+            <h3 className="text-2xl font-semibold bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">Let’s talk</h3>
+            <p className="mx-auto mt-3 max-w-2xl text-slate-700">Ready to automate your phone line with a human-quality agent?</p>
+            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button onClick={sendQuickEmail} disabled={submitting} className="inline-flex items-center rounded-full bg-slate-900 text-white px-6 py-3 text-sm font-medium shadow/50 shadow-black/10 transition hover:shadow-black/20 disabled:opacity-60">
+                Send us an email
+              </button>
+              <button onClick={() => openModal('demo')} className="inline-flex items-center rounded-full border border-slate-300/80 bg-white/80 px-6 py-3 text-sm text-slate-800 backdrop-blur transition hover:bg-white">
+                Request a demo
+              </button>
+            </div>
+            <div className="pointer-events-none absolute -left-16 -top-8 h-48 w-2/3 -rotate-6 bg-gradient-to-r from-white to-transparent blur-2xl" />
+          </motion.div>
+        </motion.section>
       </main>
 
       {/* Footer */}
