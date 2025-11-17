@@ -1,28 +1,34 @@
-import { useState } from 'react'
+import Navbar from './components/Navbar'
+import Hero from './components/Hero'
+import Stats from './components/Stats'
+import DashboardShell from './components/DashboardShell'
+import CallsPage from './components/CallsPage'
+import CalendarPage from './components/CalendarPage'
+import SettingsPage from './components/SettingsPage'
+import AdminPage from './components/AdminPage'
+import { Routes, Route } from 'react-router-dom'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Vibe Coding Platform
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Your AI-powered development environment
-        </p>
-        <div className="text-center">
-          <button
-            onClick={() => setCount(count + 1)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Count is {count}
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-950">
+      <Navbar />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <Hero />
+              <Stats />
+              <DashboardShell />
+            </>
+          }
+        />
+        <Route path="/dashboard" element={<DashboardShell />} />
+        <Route path="/calls" element={<CallsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+      </Routes>
     </div>
   )
 }
-
-export default App
