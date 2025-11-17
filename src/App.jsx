@@ -169,18 +169,18 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 pt-40 pb-44">
         {/* Hero */}
         <motion.section variants={stagger} initial="hidden" animate="show" className="relative text-center">
-          {/* Glass/gradient heading (purple SaaS) */}
+          {/* Professional, single-tone deep purple heading with subtle glass backdrop */}
           <motion.h1
             variants={fadeUp}
             className="mx-auto max-w-5xl text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight"
           >
             <span className="relative inline-block">
-              <span className="bg-gradient-to-br from-violet-700 via-fuchsia-600 to-indigo-700 bg-clip-text text-transparent">
+              <span className="text-violet-900">
                 The AI voice agent that answers every call
               </span>
-              {/* Glassy glow behind text */}
-              <span className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-white/30 blur-xl" />
-              <span className="pointer-events-none absolute inset-x-10 -top-2 -z-10 h-10 rounded-full bg-gradient-to-r from-fuchsia-400/30 via-white/30 to-violet-400/30 blur-2xl" />
+              {/* Subtle glass backdrop behind the text */}
+              <span className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-white/25 blur-xl" />
+              <span className="pointer-events-none absolute inset-x-10 -top-2 -z-10 h-10 rounded-full bg-violet-500/10 blur-2xl" />
             </span>
           </motion.h1>
           <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-3xl text-lg text-slate-700">
